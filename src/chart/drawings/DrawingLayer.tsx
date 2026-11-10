@@ -142,6 +142,8 @@ export function DrawingLayer({ chart, series, getBars, tfSeconds, digits, contra
     select(d.id);
     setPlacing(null);
     if (!stayInTool) setTool('cursor');
+    // Let the trader fine-tune exact entry / SL / TP / lots right after placing a position.
+    if (tool === 'long' || tool === 'short') useDrawings.setState({ positionDialog: { id: d.id } });
   }, [tool, add, select, setTool, onAlert, tfSeconds, stayInTool]);
 
   // ---------- placement ----------

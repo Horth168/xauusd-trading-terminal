@@ -4,7 +4,7 @@ import {
   createChart, createSeriesMarkers,
   type IChartApi, type IPriceLine, type ISeriesApi, type ISeriesMarkersPluginApi, type SeriesMarker, type SeriesType, type Time, type UTCTimestamp,
 } from 'lightweight-charts';
-import { Eye, EyeOff, Loader2, Pause, Play, Settings2, SkipForward, StepForward, X } from 'lucide-react';
+import { ChevronsLeft, ChevronsRight, Eye, EyeOff, Loader2, Pause, Play, Settings2, X } from 'lucide-react';
 import { feed, useFeed } from '../market/feed';
 import { upsertBar } from '../market/aggregate';
 import { bucketStart, getTimeframe } from '../market/timeframes';
@@ -515,17 +515,53 @@ export function ChartPane({ index, active, onActivate, onEditIndicator, register
         </div>
       )}
       {replay.mode === 'on' && (
-        <div className="absolute bottom-8 left-1/2 z-30 flex -translate-x-1/2 items-center gap-1 rounded-lg border border-ink-600 bg-ink-850/95 px-2 py-1 text-xs shadow-xl">
-          <button className="btn-icon" title={replay.playing ? 'Pause' : 'Play'} onClick={() => setReplay((r) => ({ ...r, playing: !r.playing }))}>{replay.playing ? <Pause size={14} /> : <Play size={14} />}</button>
-          <button className="btn-icon" title="Step forward one bar" onClick={() => setReplay((r) => ({ ...r, cursor: Math.min(barsRef.current.length - 1, r.cursor + 1) }))}><StepForward size={14} /></button>
-          <button className="btn-icon" title="Forward 10 bars" onClick={() => setReplay((r) => ({ ...r, cursor: Math.min(barsRef.current.length - 1, r.cursor + 10) }))}><SkipForward size={14} /></button>
-          <select className="bg-transparent text-ink-200" value={replay.speed} onChange={(e) => setReplay((r) => ({ ...r, speed: Number(e.target.value) }))}>
+        <ReplayBar
+          playing={replay.playing}
+          speed={replay.speed}
+          label={bars[bars.length - 1] ? fmtDate(bars[bars.length - 1].time, tz) + ' ' + fmtTime(bars[bars.length - 1].time, tz) : ''}
+          canBack={replay.cursor > 10}
+          canForward={replay.cursor < barsRef.current.length - 1}
+          onTogglePlay={() => setReplay((r) => ({ ...r, playing: !r.playing }))}
+          onStep={(n) => setReplay((r) => ({ ...r, playing: false, cursor: Math.max(10, Math.min(barsRef.current.length - 1, r.cursor + n)) }))}
+          onSpeed={(speed) => setReplay((r) => ({ ...r, speed }))}
+          onExit={() => setReplay((r) => ({ ...r, mode: 'off', playing: false }))}
+        />
+      )}
+    </div>
+  );
+}
+
+const STEP_PRESETS = [1, 5, 10, 20, 50];
+
+/** Replay controls: jump back / forward by a chosen number of candles, play, speed, exit. */
+function ReplayBar(p: { playing: boolean; speed: number; label: string; canBack: boolean; canForward: boolean; onTogglePlay: () => void; onStep: (n: number) => void; onSpeed: (s: number) => void; onExit: () => void }) {
+  const [step, setStep] = useState<number>(() => { try { return Number(localStorage.getItem('xau-replay-step')) || 5; } catch { return 5; } });
+  const [custom, setCustom] = useState(false);
+  const choose = (n: number) => { const v = Math.max(1, Math.min(1000, Math.round(n) || 1)); setStep(v); try { localStorage.setItem('xau-replay-step', String(v)); } catch { /* private mode */ } };
+  const btn = 'flex h-10 min-w-[64px] items-center justify-center gap-1 rounded-xl bg-white/[0.06] px-3 text-sm font-semibold text-ink-100 transition-all active:scale-95 disabled:opacity-30';
+  return (
+    <div className="animate-in absolute inset-x-2 bottom-3 z-30 mx-auto max-w-md rounded-2xl border border-white/10 bg-ink-850/95 p-2.5 shadow-2xl backdrop-blur-xl">
+      <div className="flex items-center gap-2">
+        <button className={btn} disabled={!p.canBack} onClick={() => p.onStep(-step)} title={`Back ${step} candles`}><ChevronsLeft size={18} />{step}</button>
+        <button className="flex h-10 w-12 shrink-0 items-center justify-center rounded-xl bg-gold-500 text-ink-950 transition-all active:scale-95" onClick={p.onTogglePlay} title={p.playing ? 'Pause' : 'Play'}>{p.playing ? <Pause size={18} /> : <Play size={18} />}</button>
+        <button className={btn} disabled={!p.canForward} onClick={() => p.onStep(step)} title={`Forward ${step} candles`}>{step}<ChevronsRight size={18} /></button>
+        <div className="ml-auto flex items-center gap-1">
+          <select className="h-10 rounded-xl bg-white/[0.06] px-2 text-xs text-ink-200 outline-none" value={p.speed} onChange={(e) => p.onSpeed(Number(e.target.value))} title="Play speed">
             {[0.5, 1, 2, 4, 10].map((s) => <option key={s} value={s} className="bg-ink-850">{s}x</option>)}
           </select>
-          <span className="px-1 font-mono text-ink-300">{bars[bars.length - 1] ? fmtDate(bars[bars.length - 1].time, tz) + ' ' + fmtTime(bars[bars.length - 1].time, tz) : ''}</span>
-          <button className="btn-icon text-down" title="Exit replay" onClick={() => setReplay((r) => ({ ...r, mode: 'off', playing: false }))}><X size={14} /></button>
+          <button className="flex h-10 w-10 items-center justify-center rounded-xl text-down transition-all hover:bg-down/10 active:scale-95" title="Exit replay" onClick={p.onExit}><X size={18} /></button>
         </div>
-      )}
+      </div>
+      <div className="mt-2 flex items-center gap-1.5">
+        <span className="shrink-0 text-[11px] text-ink-400">Step</span>
+        {STEP_PRESETS.map((n) => (
+          <button key={n} onClick={() => { setCustom(false); choose(n); }} className={`h-7 min-w-[34px] rounded-lg px-2 text-xs font-medium transition-colors ${step === n && !custom ? 'bg-gold-500/20 text-gold-300' : 'bg-white/[0.04] text-ink-300'}`}>{n}</button>
+        ))}
+        {custom || !STEP_PRESETS.includes(step)
+          ? <input autoFocus={custom} type="number" inputMode="numeric" min={1} max={1000} className="h-7 w-16 rounded-lg bg-white/[0.06] px-2 text-center text-xs text-gold-300 outline-none ring-1 ring-gold-500/40" value={step} onChange={(e) => choose(Number(e.target.value))} />
+          : <button onClick={() => setCustom(true)} className="h-7 rounded-lg bg-white/[0.04] px-2 text-xs text-ink-300">Custom</button>}
+        <span className="ml-auto truncate font-mono text-[11px] text-ink-400">{p.label}</span>
+      </div>
     </div>
   );
 }

@@ -74,6 +74,8 @@ interface DrawingState {
   future: Drawing[][];
   loaded: boolean;
   stayInTool: boolean;
+  /** Position dialog: edit an existing long/short drawing, or create one from exact prices. */
+  positionDialog: { id?: string; side?: 'long' | 'short' } | null;
   setTool: (t: ToolId) => void;
   select: (id: string | null) => void;
   commit: (items: Drawing[]) => void; // with undo history
@@ -102,6 +104,7 @@ export const useDrawings = create<DrawingState>((set, get) => ({
   future: [],
   loaded: false,
   stayInTool: false,
+  positionDialog: null,
   setTool: (tool) => set({ tool, selected: null }),
   select: (selected) => set({ selected }),
   commit: (items) => {

@@ -150,7 +150,7 @@ export default function LoginPage() {
       </aside>
 
       {/* Auth card */}
-      <main className="relative flex flex-1 items-center justify-center px-5 pb-[calc(24px+var(--safe-bottom))] pt-[calc(24px+var(--safe-top))]">
+      <main className="relative flex min-h-full flex-1 items-start justify-center sm:items-center px-5 pb-[calc(28px+var(--safe-bottom))] pt-[calc(44px+var(--safe-top))]">
         <div className="w-full max-w-[400px]">
           <div className="mb-8 flex flex-col items-center text-center lg:hidden">
             <img src="/icon.svg" alt="" className="h-14 w-14 rounded-2xl shadow-[0_8px_30px_-8px_rgba(212,167,44,0.45)]" />

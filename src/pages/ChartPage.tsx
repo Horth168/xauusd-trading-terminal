@@ -5,6 +5,7 @@ import {
 import { ChartPane, type PaneApi } from '../chart/ChartPane';
 import { DrawingProps, DrawingToolbar, HiddenDrawingsNotice } from '../chart/DrawingToolbar';
 import { AddIndicatorDialog, EditIndicatorDialog } from '../chart/IndicatorDialogs';
+import { PositionDialog } from '../chart/PositionDialog';
 import { FeedBadge, PriceTicker, StatusBar } from '../components/FeedStatus';
 import { Modal } from '../components/ui';
 import { TIMEFRAMES, customTimeframe } from '../market/timeframes';
@@ -91,8 +92,8 @@ export default function ChartPage() {
               {!FAVORITE_TFS.includes(cfg.tf) ? allTfs.find((t) => t.id === cfg.tf)?.label : ''}<ChevronDown size={12} />
             </button>
             {tfMenu && (
-              <div className="animate-in fixed z-50 mt-1 w-56 rounded-lg border border-ink-600 bg-ink-850 p-2 shadow-xl" onMouseLeave={() => setTfMenu(false)}>
-                <div className="grid grid-cols-4 gap-1">
+              <div className="animate-in fixed inset-x-3 top-[calc(var(--safe-top)+92px)] z-50 rounded-2xl border border-white/10 bg-ink-850/95 p-3 shadow-2xl backdrop-blur-xl md:inset-x-auto md:top-auto md:mt-1 md:w-60 md:p-2" onMouseLeave={() => setTfMenu(false)}>
+                <div className="grid grid-cols-4 gap-1.5 md:gap-1">
                   {allTfs.map((t) => (
                     <button key={t.id} className={`chip ${cfg.tf === t.id ? 'on' : ''}`} onClick={() => { updateChart(activeChart, { tf: t.id }); setTfMenu(false); }}>{t.label}</button>
                   ))}
@@ -116,7 +117,7 @@ export default function ChartPage() {
         <div className="relative shrink-0">
           <button className="btn-icon" title={`Chart type: ${currentType.label}`} onClick={() => setTypeMenu(!typeMenu)}><currentType.icon size={16} /></button>
           {typeMenu && (
-            <div className="animate-in fixed z-50 mt-1 w-40 rounded-lg border border-ink-600 bg-ink-850 p-1 shadow-xl" onMouseLeave={() => setTypeMenu(false)}>
+            <div className="animate-in fixed inset-x-3 top-[calc(var(--safe-top)+92px)] z-50 rounded-2xl border border-white/10 bg-ink-850/95 p-1.5 shadow-2xl backdrop-blur-xl md:inset-x-auto md:top-auto md:mt-1 md:w-44" onMouseLeave={() => setTypeMenu(false)}>
               {CHART_TYPES.map((t) => (
                 <button key={t.id} className={`flex w-full items-center gap-2 rounded px-2 py-1.5 text-xs hover:bg-ink-700 ${cfg.chartType === t.id ? 'text-gold-300' : ''}`} onClick={() => { updateChart(activeChart, { chartType: t.id }); setTypeMenu(false); }}><t.icon size={14} />{t.label}</button>
               ))}
@@ -159,6 +160,7 @@ export default function ChartPage() {
       <AddIndicatorDialog open={indOpen} onClose={() => setIndOpen(false)} chartIndex={activeChart} />
       <EditIndicatorDialog target={editInd} onClose={() => setEditInd(null)} />
       <LayoutsDialog open={layoutsOpen} onClose={() => setLayoutsOpen(false)} />
+      <PositionDialog />
     </div>
   );
 }

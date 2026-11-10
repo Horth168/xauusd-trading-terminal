@@ -2,7 +2,7 @@ import { useState } from 'react';
 import {
   AlarmClock, ArrowDownRight, ArrowUpRight, Baseline, Brush, Circle, Copy, Eye, EyeOff, GitCommitHorizontal, Lock, LockOpen, Magnet,
   MousePointer2, MoveHorizontal, MoveVertical, PencilRuler, Redo2, Ruler, Square, Trash2, Triangle, Type, Undo2, TrendingUp, Spline,
-  Rows3, Pin, CalendarRange, Target, ShieldAlert, Flag, Radius, Waypoints, ChevronsRight, Minus, SeparatorVertical,
+  Rows3, Pin, CalendarRange, Target, ShieldAlert, Flag, Radius, Waypoints, ChevronsRight, Minus, SeparatorVertical, SlidersHorizontal,
 } from 'lucide-react';
 import { TOOLS, useDrawings, type Drawing, type ToolId, type ToolSpec } from './drawings/model';
 import { useSettings } from '../store/settings';
@@ -56,6 +56,16 @@ export function DrawingToolbar({ vertical = true }: { vertical?: boolean }) {
                     </button>
                   );
                 })}
+                {g === 'Trading' && (
+                  <>
+                    <div className="my-1 h-px bg-white/5" />
+                    {(['long', 'short'] as const).map((side) => (
+                      <button key={side} className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs text-ink-200 hover:bg-ink-700" onClick={() => { setOpen(null); useDrawings.setState({ positionDialog: { side } }); }}>
+                        <SlidersHorizontal size={14} /> {side === 'long' ? 'Long' : 'Short'} at exact prices…
+                      </button>
+                    ))}
+                  </>
+                )}
               </div>
             )}
           </div>
@@ -81,7 +91,7 @@ export function DrawingProps() {
   if (!d) return null;
   const p = (patch: Partial<Drawing>) => update(d.id, patch);
   return (
-    <div className="animate-in absolute left-1/2 top-9 z-30 flex max-w-[95%] -translate-x-1/2 flex-wrap items-center gap-1 rounded-lg border border-ink-600 bg-ink-850/95 px-2 py-1 shadow-xl backdrop-blur">
+    <div className="animate-in absolute inset-x-2 top-2 z-30 mx-auto flex w-fit max-w-[calc(100%-16px)] items-center gap-1.5 overflow-x-auto rounded-xl border border-white/10 bg-ink-850/95 px-2 py-1.5 shadow-2xl backdrop-blur-xl [scrollbar-width:none] md:top-9 [&>*]:shrink-0">
       {SWATCHES.map((c) => (
         <button key={c} className={`h-4 w-4 rounded-full border ${d.color === c ? 'border-white' : 'border-transparent'}`} style={{ background: c }} onClick={() => p({ color: c })} aria-label={`Color ${c}`} />
       ))}
@@ -95,7 +105,17 @@ export function DrawingProps() {
       )}
       {d.type === 'text' && <input className="w-32 rounded bg-ink-800 px-1 text-xs" value={d.text ?? ''} onChange={(e) => p({ text: e.target.value })} />}
       {(d.type === 'long' || d.type === 'short') && (
-        <label className="flex items-center gap-1 text-xs text-ink-300">lots<input type="number" step={0.01} min={0.01} className="w-16 rounded bg-ink-800 px-1" value={d.lots ?? 0.1} onChange={(e) => p({ lots: Number(e.target.value) })} /></label>
+        <button className="order-first flex h-7 items-center gap-1.5 rounded-lg bg-gold-500/15 px-2.5 text-xs font-medium text-gold-300 hover:bg-gold-500/25" onClick={() => useDrawings.setState({ positionDialog: { id: d.id } })}>
+          <SlidersHorizontal size={13} /> Entry / SL / TP
+        </button>
+      )}
+      {['hline', 'entry', 'stoploss', 'takeprofit'].includes(d.type) && (
+        <label className="order-first flex items-center gap-1 text-xs text-ink-300">price
+          <input key={d.id + d.points[0].price} type="number" step="0.01" inputMode="decimal" className="w-24 rounded bg-ink-800 px-1.5 py-0.5 font-mono"
+            defaultValue={d.points[0].price.toFixed(2)}
+            onBlur={(e) => { const v = parseFloat(e.target.value); if (Number.isFinite(v)) p({ points: [{ ...d.points[0], price: v }] }); }}
+            onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }} />
+        </label>
       )}
       <button className="btn-icon" title={d.locked ? 'Unlock' : 'Lock'} onClick={() => p({ locked: !d.locked })}>{d.locked ? <Lock size={14} /> : <LockOpen size={14} />}</button>
       <button className="btn-icon" title="Hide" onClick={() => { p({ hidden: true }); select(null); }}><EyeOff size={14} /></button>
