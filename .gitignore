@@ -1,0 +1,11 @@
+node_modules
+dist
+dev-dist
+.env
+.env.local
+.vercel
+*.log
+__pycache__
+mt5-bridge/.env
+.venv
+*.tsbuildinfo

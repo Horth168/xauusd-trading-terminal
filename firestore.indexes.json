@@ -1,0 +1,10 @@
+{
+  "indexes": [],
+  "fieldOverrides": [
+    { "collectionGroup": "backtests", "fieldPath": "trades", "indexes": [] },
+    { "collectionGroup": "backtests", "fieldPath": "curve", "indexes": [] },
+    { "collectionGroup": "backtests", "fieldPath": "monthly", "indexes": [] },
+    { "collectionGroup": "drawings", "fieldPath": "items", "indexes": [] },
+    { "collectionGroup": "indicators", "fieldPath": "code", "indexes": [] }
+  ]
+}

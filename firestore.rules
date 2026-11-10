@@ -1,0 +1,19 @@
+rules_version = '2';
+// Every record lives under users/{uid}/... and only that signed-in user can read or write it.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isOwner(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+    match /users/{uid}/{collection}/{docId} {
+      allow read, delete: if isOwner(uid);
+      allow create, update: if isOwner(uid)
+        && collection in ['trades', 'cashflows', 'strategies', 'backtests', 'indicators', 'alerts', 'drawings', 'settings']
+        && request.resource.data.id == docId;
+    }
+    // Deny everything else.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

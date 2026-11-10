@@ -1,0 +1,53 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+}
+
+html, body, #root { height: 100%; }
+body {
+  @apply bg-ink-950 text-ink-200 antialiased;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+* { scrollbar-width: thin; scrollbar-color: #2a2a31 transparent; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: #2a2a31; border-radius: 8px; }
+
+@layer components {
+  .btn { @apply inline-flex items-center justify-center gap-1.5 rounded-md border border-ink-600 bg-ink-800 px-3 py-1.5 text-sm text-ink-100 transition-colors hover:border-ink-500 hover:bg-ink-700 disabled:cursor-not-allowed disabled:opacity-50; }
+  .btn-gold { @apply inline-flex items-center justify-center gap-1.5 rounded-md bg-gold-500 px-3 py-1.5 text-sm font-medium text-ink-950 transition-colors hover:bg-gold-400 disabled:cursor-not-allowed disabled:opacity-50; }
+  .btn-danger { @apply inline-flex items-center justify-center gap-1.5 rounded-md border border-down/40 bg-down/10 px-3 py-1.5 text-sm text-down transition-colors hover:bg-down/20; }
+  .btn-icon { @apply inline-flex h-7 w-7 items-center justify-center rounded-md text-ink-300 transition-colors hover:bg-ink-700 hover:text-ink-100; }
+  .btn-icon.on { @apply bg-gold-500/15 text-gold-300; }
+  .input { @apply w-full rounded-md border border-ink-600 bg-ink-900 px-2.5 py-1.5 text-sm text-ink-100 outline-none transition-colors placeholder:text-ink-400 focus:border-gold-500; }
+  .label { @apply mb-1 block text-xs font-medium text-ink-300; }
+  .card { @apply rounded-xl border border-ink-700 bg-ink-850; }
+  .chip { @apply rounded-md px-2 py-1 text-xs text-ink-300 transition-colors hover:bg-ink-700 hover:text-ink-100; }
+  .chip.on { @apply bg-ink-700 text-gold-300; }
+  .table-x { @apply w-full text-left text-sm; }
+  .table-x th { @apply sticky top-0 whitespace-nowrap border-b border-ink-700 bg-ink-850 px-3 py-2 text-xs font-medium text-ink-400; }
+  .table-x td { @apply whitespace-nowrap border-b border-ink-800 px-3 py-2; }
+  .table-x tr:hover td { @apply bg-ink-800/60; }
+}
+
+.pt-safe { padding-top: var(--safe-top); }
+.pb-safe { padding-bottom: var(--safe-bottom); }
+.pl-safe { padding-left: var(--safe-left); }
+.pr-safe { padding-right: var(--safe-right); }
+
+@keyframes fade-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+.animate-in { animation: fade-in 160ms ease-out; }
+
+@keyframes flash-up { from { background: rgba(34, 176, 125, 0.35); } to { background: transparent; } }
+@keyframes flash-down { from { background: rgba(229, 72, 77, 0.35); } to { background: transparent; } }
+.flash-up { animation: flash-up 600ms ease-out; }
+.flash-down { animation: flash-down 600ms ease-out; }
