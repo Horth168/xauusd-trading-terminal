@@ -1,4 +1,8 @@
-# Firebase setup (project `vhv888-finance`)
+# Firebase setup (project `v88-car-rental-contract`)
+
+> This app shares the Firebase project with the V88 car-rental app. All trading data lives under
+> `users/{uid}/…`. **Do not deploy `firestore.rules` / `storage.rules` as-is** — that would replace the
+> car-rental app's rules. Merge the `match /users/{uid}/...` blocks into the existing rules instead.
 
 The app uses **Authentication**, **Cloud Firestore** and **Cloud Storage**. Without the Firebase web config the app
 runs in *local mode* (data in this browser only) — clearly shown in Settings.
@@ -11,12 +15,12 @@ Copy the `firebaseConfig` values into Vercel → Project → Settings → Enviro
 | Vercel variable | firebaseConfig key |
 |---|---|
 | `VITE_FIREBASE_API_KEY` | apiKey |
-| `VITE_FIREBASE_AUTH_DOMAIN` | authDomain (`vhv888-finance.firebaseapp.com`) |
-| `VITE_FIREBASE_PROJECT_ID` | projectId (`vhv888-finance`) |
-| `VITE_FIREBASE_STORAGE_BUCKET` | storageBucket (`vhv888-finance.firebasestorage.app`) |
+| `VITE_FIREBASE_AUTH_DOMAIN` | authDomain (`v88-car-rental-contract.firebaseapp.com`) |
+| `VITE_FIREBASE_PROJECT_ID` | projectId (`v88-car-rental-contract`) |
+| `VITE_FIREBASE_STORAGE_BUCKET` | storageBucket (`v88-car-rental-contract.firebasestorage.app`) |
 | `VITE_FIREBASE_MESSAGING_SENDER_ID` | messagingSenderId |
 | `VITE_FIREBASE_APP_ID` | appId |
-| `VITE_FIREBASE_MEASUREMENT_ID` | measurementId (`G-P6ZKTL1B9B`) |
+| `VITE_FIREBASE_MEASUREMENT_ID` | measurementId (`G-6HK0TP432P`) |
 
 These are public identifiers (they ship in every Firebase web app). Security is enforced by Auth + rules below.
 **Never** put a service-account JSON in the frontend or in `VITE_*` variables.
@@ -57,11 +61,11 @@ automatically stores screenshots as compressed inline images in Firestore instea
 
 ## 5. Deploy the rules
 
-```bash
-npm i -g firebase-tools
-firebase login --reauth
-firebase deploy --only firestore:rules,firestore:indexes,storage --project vhv888-finance
-```
+Because the project is shared, add the trading app's blocks to the **existing** rules in the console
+(Firestore → Rules, Storage → Rules) rather than running `firebase deploy`, which overwrites them.
+Copy the `match /users/{uid}/...` blocks from `firestore.rules` and `storage.rules`, keep the car-rental
+app's own `match` blocks, and do not copy the final "deny everything else" block if the car-rental rules
+rely on their own defaults.
 
 `firestore.rules`: only `request.auth.uid == uid` can read/write `users/{uid}/…`, only known collections, everything
 else denied. `storage.rules`: owner-only, images < 10 MB.
