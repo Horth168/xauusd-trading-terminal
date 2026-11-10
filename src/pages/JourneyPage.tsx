@@ -136,7 +136,21 @@ export default function JourneyPage() {
         {trades.loading ? <p className="p-6 text-center text-sm text-ink-400">Loading…</p> : !filtered.length ? (
           <div className="p-4"><Empty>No trades in this period. <button className="text-gold-300 hover:underline" onClick={() => setEditing({})}>Record your first trade</button> or import from MT5.</Empty></div>
         ) : (
-          <div className="max-h-[560px] overflow-auto">
+          <>
+          {/* Phone: tappable cards */}
+          <div className="divide-y divide-white/5 md:hidden">
+            {filtered.map((t) => (
+              <button key={t.id} className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors active:bg-white/[0.03]" onClick={() => setEditing(t)}>
+                <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-[11px] font-bold ${t.side === 'buy' ? 'bg-up/15 text-up' : 'bg-down/15 text-down'}`}>{t.side === 'buy' ? 'BUY' : 'SELL'}</span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-medium text-ink-100">{t.instrument} · {t.lots} lot{t.strategy ? ` · ${t.strategy}` : ''}</span>
+                  <span className="block truncate text-xs text-ink-400">{fmtDateTime(t.date, tz)} · {num(t.entry)} → {num(t.exit)}</span>
+                </span>
+                <span className={`shrink-0 text-sm font-semibold tabular-nums ${pnlClass(netOf(t))}`}>{signedUsd(netOf(t))}</span>
+              </button>
+            ))}
+          </div>
+          <div className="hidden max-h-[560px] overflow-auto md:block">
             <table className="table-x text-xs">
               <thead><tr><th>Date</th><th>Symbol</th><th>Side</th><th>Lots</th><th>Entry</th><th>Exit</th><th>SL</th><th>TP</th><th>P&L</th><th>Fees</th><th>Net</th><th>Strategy</th><th>Emotion</th><th /></tr></thead>
               <tbody>
@@ -155,6 +169,7 @@ export default function JourneyPage() {
               </tbody>
             </table>
           </div>
+          </>
         )}
       </div>
 

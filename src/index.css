@@ -10,27 +10,35 @@
   --safe-right: env(safe-area-inset-right, 0px);
 }
 
-html, body, #root { height: 100%; }
+html, body { height: 100%; background: #08080a; }
+/* Pin the app to the physical screen edges. `height: 100%` on iOS (Safari & home-screen PWA) can stop short of
+   the home-indicator area, which made the bottom bar float. A fixed, inset-0 root always fills the whole screen. */
+#root { position: fixed; inset: 0; overflow: hidden; }
 body {
   @apply bg-ink-950 text-ink-200 antialiased;
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-feature-settings: 'cv11', 'ss01', 'tnum';
   overscroll-behavior: none;
   -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
 }
+input, select, textarea, button { font: inherit; }
+/* iOS zooms into inputs with font-size < 16px; keep 16px on phones. */
+@media (max-width: 767px) { input, select, textarea { font-size: 16px !important; } }
 
 * { scrollbar-width: thin; scrollbar-color: #2a2a31 transparent; }
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-thumb { background: #2a2a31; border-radius: 8px; }
 
 @layer components {
-  .btn { @apply inline-flex items-center justify-center gap-1.5 rounded-md border border-ink-600 bg-ink-800 px-3 py-1.5 text-sm text-ink-100 transition-colors hover:border-ink-500 hover:bg-ink-700 disabled:cursor-not-allowed disabled:opacity-50; }
-  .btn-gold { @apply inline-flex items-center justify-center gap-1.5 rounded-md bg-gold-500 px-3 py-1.5 text-sm font-medium text-ink-950 transition-colors hover:bg-gold-400 disabled:cursor-not-allowed disabled:opacity-50; }
-  .btn-danger { @apply inline-flex items-center justify-center gap-1.5 rounded-md border border-down/40 bg-down/10 px-3 py-1.5 text-sm text-down transition-colors hover:bg-down/20; }
-  .btn-icon { @apply inline-flex h-7 w-7 items-center justify-center rounded-md text-ink-300 transition-colors hover:bg-ink-700 hover:text-ink-100; }
+  .btn { @apply inline-flex h-9 select-none items-center justify-center gap-1.5 rounded-lg border border-ink-600/80 bg-ink-800 px-3.5 text-sm font-medium text-ink-100 transition-all duration-150 hover:border-ink-500 hover:bg-ink-700 active:scale-[0.97] disabled:pointer-events-none disabled:opacity-50; }
+  .btn-gold { @apply inline-flex h-9 select-none items-center justify-center gap-1.5 rounded-lg bg-gradient-to-b from-gold-400 to-gold-500 px-3.5 text-sm font-semibold text-ink-950 shadow-[0_1px_0_rgba(255,255,255,0.25)_inset,0_4px_14px_-4px_rgba(212,167,44,0.5)] transition-all duration-150 hover:brightness-110 active:scale-[0.97] disabled:pointer-events-none disabled:opacity-50; }
+  .btn-danger { @apply inline-flex h-9 select-none items-center justify-center gap-1.5 rounded-lg border border-down/40 bg-down/10 px-3.5 text-sm font-medium text-down transition-all duration-150 hover:bg-down/20 active:scale-[0.97]; }
+  .btn-icon { @apply inline-flex h-8 w-8 items-center justify-center rounded-lg text-ink-300 transition-all duration-150 hover:bg-ink-700 hover:text-ink-100 active:scale-90; }
   .btn-icon.on { @apply bg-gold-500/15 text-gold-300; }
-  .input { @apply w-full rounded-md border border-ink-600 bg-ink-900 px-2.5 py-1.5 text-sm text-ink-100 outline-none transition-colors placeholder:text-ink-400 focus:border-gold-500; }
+  .input { @apply w-full rounded-lg border border-ink-600/80 bg-ink-900 px-3 py-2 text-sm text-ink-100 outline-none transition-all duration-150 placeholder:text-ink-400 hover:border-ink-500 focus:border-gold-500 focus:ring-4 focus:ring-gold-500/10; }
   .label { @apply mb-1 block text-xs font-medium text-ink-300; }
-  .card { @apply rounded-xl border border-ink-700 bg-ink-850; }
+  .card { @apply rounded-2xl border border-white/[0.06] bg-ink-850 shadow-[0_1px_0_rgba(255,255,255,0.03)_inset,0_8px_24px_-12px_rgba(0,0,0,0.6)]; }
   .chip { @apply rounded-md px-2 py-1 text-xs text-ink-300 transition-colors hover:bg-ink-700 hover:text-ink-100; }
   .chip.on { @apply bg-ink-700 text-gold-300; }
   .table-x { @apply w-full text-left text-sm; }
@@ -44,8 +52,16 @@ body {
 .pl-safe { padding-left: var(--safe-left); }
 .pr-safe { padding-right: var(--safe-right); }
 
-@keyframes fade-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
-.animate-in { animation: fade-in 160ms ease-out; }
+@keyframes fade-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.animate-in { animation: fade-in 220ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+@keyframes sheet-up { from { transform: translateY(100%); } to { transform: none; } }
+.animate-sheet { animation: sheet-up 280ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+@media (min-width: 640px) { .animate-sheet { animation: fade-in 220ms cubic-bezier(0.2, 0.8, 0.2, 1); } }
+@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+.animate-fade { animation: fade 200ms ease-out; }
+@keyframes shake { 10%, 90% { transform: translateX(-1px); } 20%, 80% { transform: translateX(2px); } 30%, 50%, 70% { transform: translateX(-4px); } 40%, 60% { transform: translateX(4px); } }
+.animate-shake { animation: shake 400ms ease-in-out; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 1ms !important; transition-duration: 1ms !important; } }
 
 @keyframes flash-up { from { background: rgba(34, 176, 125, 0.35); } to { background: transparent; } }
 @keyframes flash-down { from { background: rgba(229, 72, 77, 0.35); } to { background: transparent; } }
