@@ -510,8 +510,9 @@ export function ChartPane({ index, active, onActivate, onEditIndicator, register
       )}
 
       {replay.mode === 'pick' && (
-        <div className="absolute left-1/2 top-10 z-30 -translate-x-1/2 rounded-md bg-gold-500 px-3 py-1.5 text-xs font-medium text-ink-950 shadow-lg">
-          Click a bar to start replay from · <button className="underline" onClick={() => setReplay((r) => ({ ...r, mode: 'off' }))}>cancel</button>
+        <div className="animate-in absolute inset-x-3 top-12 z-30 mx-auto flex max-w-sm items-center gap-3 rounded-2xl bg-gold-500 px-4 py-3 text-sm font-medium text-ink-950 shadow-2xl">
+          <span className="flex-1">Tap the candle where replay should start</span>
+          <button className="rounded-lg bg-ink-950/15 px-3 py-1.5 text-xs font-semibold" onClick={() => setReplay((r) => ({ ...r, mode: 'off' }))}>Cancel</button>
         </div>
       )}
       {replay.mode === 'on' && (

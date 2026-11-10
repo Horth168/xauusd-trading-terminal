@@ -6,6 +6,7 @@ import { ChartPane, type PaneApi } from '../chart/ChartPane';
 import { DrawingProps, DrawingToolbar, HiddenDrawingsNotice } from '../chart/DrawingToolbar';
 import { AddIndicatorDialog, EditIndicatorDialog } from '../chart/IndicatorDialogs';
 import { PositionDialog } from '../chart/PositionDialog';
+import { MobileChartBar } from '../chart/MobileChartBar';
 import { FeedBadge, PriceTicker, StatusBar } from '../components/FeedStatus';
 import { Modal } from '../components/ui';
 import { TIMEFRAMES, customTimeframe } from '../market/timeframes';
@@ -39,7 +40,15 @@ export default function ChartPage() {
   const [tfMenu, setTfMenu] = useState(false);
   const [typeMenu, setTypeMenu] = useState(false);
   const [layoutsOpen, setLayoutsOpen] = useState(false);
-  const [showTools, setShowTools] = useState(() => window.innerWidth >= 768);
+  const [showTools] = useState(true);
+  const [isMobile, setIsMobile] = useState(() => window.matchMedia('(max-width: 767px)').matches);
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)');
+    const h = () => setIsMobile(mq.matches);
+    mq.addEventListener('change', h);
+    return () => mq.removeEventListener('change', h);
+  }, []);
+  useEffect(() => { if (isMobile && activeChart !== 0) set({ activeChart: 0 }); }, [isMobile, activeChart, set]);
   const [fullscreen, setFullscreen] = useState(false);
   const [customMin, setCustomMin] = useState('');
   const areaRef = useRef<HTMLDivElement>(null);
@@ -53,8 +62,9 @@ export default function ChartPage() {
     return () => document.removeEventListener('fullscreenchange', h);
   }, []);
 
-  const n = LAYOUTS.find((l) => l.id === layout)!.n;
-  const gridClass = layout === '1' ? 'grid-cols-1' : layout === '2h' ? 'grid-cols-1 md:grid-cols-2' : layout === '2v' ? 'grid-rows-2' : 'grid-cols-2 grid-rows-2';
+  // Phones always show one large chart; multi-chart layouts are a desktop feature.
+  const n = isMobile ? 1 : LAYOUTS.find((l) => l.id === layout)!.n;
+  const gridClass = isMobile || layout === '1' ? 'grid-cols-1' : layout === '2h' ? 'grid-cols-1 md:grid-cols-2' : layout === '2v' ? 'grid-rows-2' : 'grid-cols-2 grid-rows-2';
 
   const toggleFull = () => {
     if (document.fullscreenElement) document.exitFullscreen();
@@ -77,25 +87,24 @@ export default function ChartPage() {
   return (
     <div ref={areaRef} className={`flex h-full flex-col bg-ink-950 ${fullscreen ? 'fixed inset-0 z-50' : ''}`}>
       {/* Top toolbar */}
-      <div className="flex h-10 shrink-0 items-center gap-1 overflow-x-auto border-b border-ink-700 bg-ink-900 px-2">
-        <button className={`btn-icon md:hidden ${showTools ? 'on' : ''}`} onClick={() => setShowTools(!showTools)} title="Drawing tools"><PencilRuler size={16} /></button>
-        <div className="mr-1 flex shrink-0 items-center gap-2 pr-2">
+      <div className="flex h-12 shrink-0 items-center gap-1 overflow-x-auto border-b border-white/[0.06] bg-ink-900 px-2 [scrollbar-width:none] md:h-10">
+        <div className="mr-1 flex shrink-0 items-center gap-2 pl-1 pr-1 md:pl-0 md:pr-2">
           <span className="text-sm font-semibold text-gold-300">{source === 'twelvedata' ? 'XAU/USD' : 'XAUUSD'}</span>
           <span className="hidden text-[11px] text-ink-400 lg:inline">{source === 'mt5' ? 'Exness MT5' : source === 'twelvedata' ? 'Twelve Data (not Exness)' : 'no feed'}</span>
         </div>
         <div className="flex shrink-0 items-center">
           {FAVORITE_TFS.map((id) => (
-            <button key={id} className={`chip ${cfg.tf === id ? 'on' : ''}`} onClick={() => updateChart(activeChart, { tf: id })}>{TIMEFRAMES.find((t) => t.id === id)!.label}</button>
+            <button key={id} className={`chip h-9 min-w-[38px] text-[13px] font-medium md:h-auto md:min-w-0 md:text-xs ${cfg.tf === id ? 'on' : ''}`} onClick={() => updateChart(activeChart, { tf: id })}>{TIMEFRAMES.find((t) => t.id === id)!.label}</button>
           ))}
           <div className="relative">
-            <button className={`chip flex items-center ${!FAVORITE_TFS.includes(cfg.tf) ? 'on' : ''}`} onClick={() => setTfMenu(!tfMenu)}>
-              {!FAVORITE_TFS.includes(cfg.tf) ? allTfs.find((t) => t.id === cfg.tf)?.label : ''}<ChevronDown size={12} />
+            <button className={`chip flex h-9 min-w-[38px] items-center justify-center text-[13px] md:h-auto md:min-w-0 md:text-xs ${!FAVORITE_TFS.includes(cfg.tf) ? 'on' : ''}`} onClick={() => setTfMenu(!tfMenu)} aria-label="More timeframes">
+              {!FAVORITE_TFS.includes(cfg.tf) ? allTfs.find((t) => t.id === cfg.tf)?.label : ''}<ChevronDown size={15} />
             </button>
             {tfMenu && (
               <div className="animate-in fixed inset-x-3 top-[calc(var(--safe-top)+92px)] z-50 rounded-2xl border border-white/10 bg-ink-850/95 p-3 shadow-2xl backdrop-blur-xl md:inset-x-auto md:top-auto md:mt-1 md:w-60 md:p-2" onMouseLeave={() => setTfMenu(false)}>
                 <div className="grid grid-cols-4 gap-1.5 md:gap-1">
                   {allTfs.map((t) => (
-                    <button key={t.id} className={`chip ${cfg.tf === t.id ? 'on' : ''}`} onClick={() => { updateChart(activeChart, { tf: t.id }); setTfMenu(false); }}>{t.label}</button>
+                    <button key={t.id} className={`chip h-10 text-sm md:h-auto md:text-xs ${cfg.tf === t.id ? 'on' : ''}`} onClick={() => { updateChart(activeChart, { tf: t.id }); setTfMenu(false); }}>{t.label}</button>
                   ))}
                 </div>
                 <div className="mt-2 flex gap-1 border-t border-ink-700 pt-2">
@@ -113,6 +122,7 @@ export default function ChartPage() {
             )}
           </div>
         </div>
+        <div className="hidden shrink-0 items-center gap-1 md:flex">
         <div className="mx-1 h-5 w-px bg-ink-700" />
         <div className="relative shrink-0">
           <button className="btn-icon" title={`Chart type: ${currentType.label}`} onClick={() => setTypeMenu(!typeMenu)}><currentType.icon size={16} /></button>
@@ -133,11 +143,12 @@ export default function ChartPage() {
         <button className="btn-icon shrink-0" title="Saved layouts" onClick={() => setLayoutsOpen(true)}><Save size={15} /></button>
         <button className="btn-icon shrink-0" title="Screenshot" onClick={screenshot}><Camera size={15} /></button>
         <button className="btn-icon shrink-0" title="Full screen" onClick={toggleFull}>{fullscreen ? <Minimize size={15} /> : <Maximize size={15} />}</button>
+        </div>
         <div className="ml-auto hidden shrink-0 items-center gap-3 pl-3 md:flex">
           <PriceTicker />
         </div>
       </div>
-      <div className="flex items-center justify-between border-b border-ink-800 bg-ink-900 px-2 py-0.5 md:hidden">
+      <div className="flex h-9 shrink-0 items-center justify-between border-b border-white/[0.06] bg-ink-900 px-3 md:hidden">
         <PriceTicker />
         <FeedBadge compact />
       </div>
@@ -154,8 +165,17 @@ export default function ChartPage() {
           ))}
         </div>
       </div>
-      {showTools && <div className="md:hidden"><DrawingToolbar vertical={false} /></div>}
-      <StatusBar />
+      {isMobile ? (
+        <MobileChartBar
+          chartTypes={CHART_TYPES}
+          chartType={cfg.chartType}
+          onChartType={(t) => updateChart(activeChart, { chartType: t })}
+          onIndicators={() => setIndOpen(true)}
+          onReplay={() => apis.current[activeChart]?.startReplay()}
+          onScreenshot={screenshot}
+          onLayouts={() => setLayoutsOpen(true)}
+        />
+      ) : <StatusBar />}
 
       <AddIndicatorDialog open={indOpen} onClose={() => setIndOpen(false)} chartIndex={activeChart} />
       <EditIndicatorDialog target={editInd} onClose={() => setEditInd(null)} />

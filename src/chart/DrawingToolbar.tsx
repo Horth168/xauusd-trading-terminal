@@ -7,7 +7,7 @@ import {
 import { TOOLS, useDrawings, type Drawing, type ToolId, type ToolSpec } from './drawings/model';
 import { useSettings } from '../store/settings';
 
-const ICONS: Record<ToolId, any> = {
+export const ICONS: Record<ToolId, any> = {
   cursor: MousePointer2, trend: TrendingUp, hline: Minus, vline: SeparatorVertical, ray: ChevronsRight, extended: MoveHorizontal,
   channel: Rows3, regression: Spline, fib: Baseline, fibext: Waypoints, fibchannel: GitCommitHorizontal, fibfan: Radius,
   rect: Square, circle: Circle, triangle: Triangle, brush: Brush, text: Type, pricerange: MoveVertical, daterange: CalendarRange,
