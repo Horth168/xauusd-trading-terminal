@@ -1,19 +1,19 @@
 rules_version = '2';
-// Every record lives under users/{uid}/... and only that signed-in user can read or write it.
+// Shared Firebase project (v88-car-rental-contract).
+// - XAUUSD trading terminal data lives ONLY under xau_users/{uid}/... and is private to that signed-in user.
+// - Every other collection keeps the car-rental app's previous behaviour (open access) so it doesn't break.
+//   TODO: lock the car-rental collections down once that app uses Firebase Authentication.
 service cloud.firestore {
   match /databases/{database}/documents {
-    function isOwner(uid) {
-      return request.auth != null && request.auth.uid == uid;
+
+    // Trading terminal: owner-only.
+    match /xau_users/{uid}/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
     }
-    match /users/{uid}/{collection}/{docId} {
-      allow read, delete: if isOwner(uid);
-      allow create, update: if isOwner(uid)
-        && collection in ['trades', 'cashflows', 'strategies', 'backtests', 'indicators', 'alerts', 'drawings', 'settings']
-        && request.resource.data.id == docId;
-    }
-    // Deny everything else.
-    match /{document=**} {
-      allow read, write: if false;
+
+    // Car-rental app: unchanged (public), but never the trading collection.
+    match /{collection}/{document=**} {
+      allow read, write: if collection != 'xau_users';
     }
   }
 }

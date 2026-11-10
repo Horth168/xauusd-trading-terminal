@@ -9,7 +9,7 @@ import { auth, db, firebaseEnabled, storage } from './firebase';
 
 /**
  * Storage abstraction. When Firebase is configured and the user is signed in, records live in
- * Firestore under users/{uid}/{collection}. Otherwise they live in this browser's localStorage
+ * Firestore under xau_users/{uid}/{collection}. Otherwise they live in this browser's localStorage
  * ("local mode"), which the UI labels clearly.
  */
 export type CollectionName =
@@ -53,7 +53,7 @@ export async function saveDoc<T extends BaseDoc>(name: CollectionName, data: Omi
   const now = Date.now();
   const item = { ...data, id: data.id ?? newId(), createdAt: (data as any).createdAt ?? now, updatedAt: now } as T;
   if (cloudActive()) {
-    await setDoc(doc(db!, 'users', uid(), name, item.id), clean(item));
+    await setDoc(doc(db!, 'xau_users', uid(), name, item.id), clean(item));
   } else {
     const items = localRead<T>(name);
     const i = items.findIndex((x) => x.id === item.id);
@@ -64,13 +64,13 @@ export async function saveDoc<T extends BaseDoc>(name: CollectionName, data: Omi
 }
 
 export async function removeDoc(name: CollectionName, id: string) {
-  if (cloudActive()) await deleteDoc(doc(db!, 'users', uid(), name, id));
+  if (cloudActive()) await deleteDoc(doc(db!, 'xau_users', uid(), name, id));
   else localWrite(name, localRead<BaseDoc>(name).filter((x) => x.id !== id));
 }
 
 export async function getOne<T extends BaseDoc>(name: CollectionName, id: string): Promise<T | null> {
   if (cloudActive()) {
-    const s = await getDoc(doc(db!, 'users', uid(), name, id));
+    const s = await getDoc(doc(db!, 'xau_users', uid(), name, id));
     return s.exists() ? (s.data() as T) : null;
   }
   return localRead<T>(name).find((x) => x.id === id) ?? null;
@@ -78,7 +78,7 @@ export async function getOne<T extends BaseDoc>(name: CollectionName, id: string
 
 export function subscribeCollection<T extends BaseDoc>(name: CollectionName, cb: (items: T[]) => void, onError?: (e: Error) => void): () => void {
   if (cloudActive()) {
-    const q = query(collection(db!, 'users', uid(), name), orderBy('createdAt', 'desc'));
+    const q = query(collection(db!, 'xau_users', uid(), name), orderBy('createdAt', 'desc'));
     return onSnapshot(q, (snap) => cb(snap.docs.map((d) => d.data() as T)), (e) => onError?.(e));
   }
   const emit = () => cb(localRead<T>(name).sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0)));
@@ -107,7 +107,7 @@ export async function migrateLocalToCloud(): Promise<number> {
     const items = localRead<BaseDoc>(name);
     for (let i = 0; i < items.length; i += 400) {
       const batch = writeBatch(db!);
-      for (const it of items.slice(i, i + 400)) batch.set(doc(db!, 'users', uid(), name, it.id), clean(it));
+      for (const it of items.slice(i, i + 400)) batch.set(doc(db!, 'xau_users', uid(), name, it.id), clean(it));
       await batch.commit();
       count += Math.min(400, items.length - i);
     }
@@ -134,14 +134,14 @@ async function compressImage(file: Blob, maxDim: number, quality: number): Promi
 const blobToDataUrl = (b: Blob) => new Promise<string>((res) => { const r = new FileReader(); r.onload = () => res(r.result as string); r.readAsDataURL(b); });
 
 /**
- * Uploads a screenshot. Cloud: Firebase Storage at users/{uid}/screenshots/. If Storage is unavailable
+ * Uploads a screenshot. Cloud: Firebase Storage at xau_users/{uid}/screenshots/. If Storage is unavailable
  * (e.g. bucket not provisioned) or in local mode, stores a compressed inline image instead.
  */
 export async function uploadImage(file: Blob): Promise<{ url: string; stored: 'storage' | 'inline' }> {
   if (cloudActive() && storage) {
     try {
       const blob = await compressImage(file, 1800, 0.85);
-      const r = ref(storage, `users/${uid()}/screenshots/${newId()}.jpg`);
+      const r = ref(storage, `xau_users/${uid()}/screenshots/${newId()}.jpg`);
       await uploadBytes(r, blob, { contentType: 'image/jpeg' });
       return { url: await getDownloadURL(r), stored: 'storage' };
     } catch (e) {

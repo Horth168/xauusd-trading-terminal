@@ -1,8 +1,8 @@
 # Firebase setup (project `v88-car-rental-contract`)
 
 > This app shares the Firebase project with the V88 car-rental app. All trading data lives under
-> `users/{uid}/…`. **Do not deploy `firestore.rules` / `storage.rules` as-is** — that would replace the
-> car-rental app's rules. Merge the `match /users/{uid}/...` blocks into the existing rules instead.
+> `xau_users/{uid}/…`. **Do not deploy `firestore.rules` / `storage.rules` as-is** — that would replace the
+> car-rental app's rules. Merge the `match /xau_users/{uid}/...` blocks into the existing rules instead.
 
 The app uses **Authentication**, **Cloud Firestore** and **Cloud Storage**. Without the Firebase web config the app
 runs in *local mode* (data in this browser only) — clearly shown in Settings.
@@ -40,14 +40,14 @@ Console → Build → Firestore Database → *Create database* (production mode,
 Data layout — everything is private per user:
 
 ```
-users/{uid}/trades/{id}        journal trades
-users/{uid}/cashflows/{id}     deposits & withdrawals (USD/KHR)
-users/{uid}/strategies/{id}    strategy library
-users/{uid}/backtests/{id}     saved backtest results (stats, curve, ≤2000 trades)
-users/{uid}/indicators/{id}    your XTS scripts
-users/{uid}/alerts/{id}        alerts
-users/{uid}/drawings/XAUUSD    chart drawings
-users/{uid}/settings/main      layouts, templates, timezone (bridge token is NOT synced)
+xau_users/{uid}/trades/{id}        journal trades
+xau_users/{uid}/cashflows/{id}     deposits & withdrawals (USD/KHR)
+xau_users/{uid}/strategies/{id}    strategy library
+xau_users/{uid}/backtests/{id}     saved backtest results (stats, curve, ≤2000 trades)
+xau_users/{uid}/indicators/{id}    your XTS scripts
+xau_users/{uid}/alerts/{id}        alerts
+xau_users/{uid}/drawings/XAUUSD    chart drawings
+xau_users/{uid}/settings/main      layouts, templates, timezone (bridge token is NOT synced)
 ```
 
 Queries are single-field (`orderBy createdAt`) so automatic indexes suffice; `firestore.indexes.json` exempts large
@@ -63,9 +63,9 @@ automatically stores screenshots as compressed inline images in Firestore instea
 
 Because the project is shared, add the trading app's blocks to the **existing** rules in the console
 (Firestore → Rules, Storage → Rules) rather than running `firebase deploy`, which overwrites them.
-Copy the `match /users/{uid}/...` blocks from `firestore.rules` and `storage.rules`, keep the car-rental
+Copy the `match /xau_users/{uid}/...` blocks from `firestore.rules` and `storage.rules`, keep the car-rental
 app's own `match` blocks, and do not copy the final "deny everything else" block if the car-rental rules
 rely on their own defaults.
 
-`firestore.rules`: only `request.auth.uid == uid` can read/write `users/{uid}/…`, only known collections, everything
+`firestore.rules`: only `request.auth.uid == uid` can read/write `xau_users/{uid}/…`, only known collections, everything
 else denied. `storage.rules`: owner-only, images < 10 MB.
