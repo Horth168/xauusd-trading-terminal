@@ -14,11 +14,11 @@ import { cert, initializeApp } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import webpush from 'web-push';
 import { scanStep, shouldNotify, type ScanEvent } from '../src/ai/monitor';
+import { bridgeClient } from './bridge';
 import { mergeConfig, type AiConfig } from '../src/ai/config';
 import { notificationText, lifecycleText, reportSummary } from '../src/ai/explain';
 import { scriptStrategy, type StrategyDef } from '../src/ai/strategies';
-import type { AnalysisTf, CandleSet, MarketSnapshot, SignalRecord } from '../src/ai/types';
-import type { Bar } from '../src/market/types';
+import type { SignalRecord } from '../src/ai/types';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const VERSION = '1.0.0';
@@ -57,20 +57,7 @@ const col = (name: string) => userDoc.collection(name);
 webpush.setVapidDetails(env('VAPID_SUBJECT', 'mailto:alerts@example.com'), env('VAPID_PUBLIC_KEY'), env('VAPID_PRIVATE_KEY'));
 
 // ---------------- bridge client (read-only endpoints) ----------------
-async function bridge<T>(path: string, timeoutMs = 8000): Promise<T> {
-  const r = await fetch(`${BRIDGE_URL}${path}`, { headers: { Authorization: `Bearer ${BRIDGE_TOKEN}` }, signal: AbortSignal.timeout(timeoutMs) });
-  if (!r.ok) throw new Error(`bridge ${path} → HTTP ${r.status}`);
-  return r.json() as Promise<T>;
-}
-const COUNTS: Record<AnalysisTf, number> = { M1: 600, M5: 500, M15: 400, H1: 400, H4: 400 };
-async function loadCandles(): Promise<CandleSet> {
-  const set: CandleSet = {};
-  await Promise.all((Object.keys(COUNTS) as AnalysisTf[]).map(async (tf) => {
-    const j = await bridge<{ bars: { time: number; open: number; high: number; low: number; close: number; tick_volume: number }[] }>(`/history?timeframe=${tf}&count=${COUNTS[tf]}`);
-    set[tf] = j.bars.map((b): Bar => ({ time: b.time, open: b.open, high: b.high, low: b.low, close: b.close, volume: b.tick_volume }));
-  }));
-  return set;
-}
+const { bridge, loadCandles, loadMarket } = bridgeClient(BRIDGE_URL, BRIDGE_TOKEN);
 
 // ---------------- state ----------------
 let cfg: AiConfig = mergeConfig(null);
@@ -162,13 +149,8 @@ async function scan() {
   try {
     const health = await bridge<{ terminal_connected: boolean; server?: string; symbol: string }>('/health', 5000);
     if (!health.terminal_connected) { await heartbeat({ bridge: 'terminal disconnected', live: false }); return; }
-    const t = await bridge<{ bid: number; ask: number; spread: number; digits: number; time_msc: number; server: string; symbol: string }>('/tick');
-    const now = Math.floor(Date.now() / 1000);
-    const tickAge = now - Math.floor(t.time_msc / 1000);
-    const market: MarketSnapshot = {
-      source: 'mt5', live: tickAge < 300, bid: t.bid, ask: t.ask, spread: t.spread, digits: t.digits,
-      updatedAt: now, server: t.server, symbol: t.symbol,
-    };
+    const { market, tickAge } = await loadMarket();
+    const now = market.updatedAt;
     const set = await loadCandles();
     const r = scanStep(set, market, cfg, active, { asOf: now, extraStrategies: extra });
     // persist signal changes
@@ -187,7 +169,7 @@ async function scan() {
     active = active.map((s) => r.changed.find((c) => c.id === s.id) ?? s).filter((s) => s.status === 'CONFIRMED' && ['PENDING_ENTRY', 'OPEN', 'TP1_HIT'].includes(s.outcome));
     if (r.created) active.push(r.created);
     for (const e of r.events) await notify(e);
-    await heartbeat({ bridge: 'connected', live: market.live, server: t.server, lastScan: now, lastDecision: r.report.decision, lastStatus: r.report.status, lastBarTime: r.report.barTime, lastError: null, activeSignals: active.length, tickAgeSec: tickAge });
+    await heartbeat({ bridge: 'connected', live: market.live, server: market.server, lastScan: now, lastDecision: r.report.decision, lastStatus: r.report.status, lastBarTime: r.report.barTime, lastError: null, activeSignals: active.length, tickAgeSec: tickAge });
     if (r.created) log(`CONFIRMED ${r.created.side} ${r.created.strategyName} score ${r.created.score.total}`);
   } catch (e: any) {
     log('scan error:', e.message);

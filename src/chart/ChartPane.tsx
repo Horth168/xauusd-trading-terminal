@@ -286,7 +286,8 @@ export function ChartPane({ index, active, onActivate, onEditIndicator, register
     const s = mainRef.current;
     if (!s || !aiOv.visible || !aiOv.overlay) return;
     const lines = addOverlayLines(s, aiOv.overlay);
-    return () => lines.forEach((l) => s.removePriceLine(l));
+    // Skip cleanup if the chart was already removed (unmount) — touching a disposed chart throws.
+    return () => { if (chartRef.current && mainRef.current === s) lines.forEach((l) => s.removePriceLine(l)); };
   }, [aiOv.visible, aiOv.overlay, chartReady]);
 
   // Focused backtest trade: SL/TP/entry price lines + scroll to it
@@ -303,7 +304,7 @@ export function ChartPane({ index, active, onActivate, onEditIndicator, register
     const bars = barsRef.current;
     const i = bars.findIndex((b) => b.time >= bucketStart(f.entryTime, tf));
     if (i >= 0) chart.timeScale().setVisibleLogicalRange({ from: i - 60, to: i + 60 });
-    return () => lines.forEach((l) => s.removePriceLine(l));
+    return () => { if (chartRef.current && mainRef.current === s) lines.forEach((l) => s.removePriceLine(l)); };
   }, [marks.focus, chartReady, tf, loading]);
 
   // Alert lines on chart

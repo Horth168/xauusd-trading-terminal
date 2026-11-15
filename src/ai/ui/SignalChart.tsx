@@ -17,6 +17,7 @@ export function SignalChart({ bars, overlay, height = 320, markTime }: { bars: B
   barsRef.current = bars;
   const getBars = useCallback(() => barsRef.current, []);
   const tfSec = overlay ? TF_SECONDS[overlay.tf] : 300;
+  const alive = useRef(false);
 
   useEffect(() => {
     const chart = createChart(el.current!, {
@@ -29,7 +30,8 @@ export function SignalChart({ bars, overlay, height = 320, markTime }: { bars: B
     });
     const series = chart.addSeries(CandlestickSeries, { upColor: '#22b07d', downColor: '#e5484d', borderVisible: false, wickUpColor: '#22b07d', wickDownColor: '#e5484d' });
     setApi({ chart, series });
-    return () => { chart.remove(); setApi(null); };
+    alive.current = true;
+    return () => { alive.current = false; chart.remove(); setApi(null); };
   }, [tz]);
 
   useEffect(() => {
@@ -44,7 +46,7 @@ export function SignalChart({ bars, overlay, height = 320, markTime }: { bars: B
     marks.sort((a, b) => (a.time as number) - (b.time as number));
     const m = createSeriesMarkers(api.series, marks);
     api.chart.timeScale().fitContent();
-    return () => { lines.forEach((l) => api.series.removePriceLine(l)); m.detach(); };
+    return () => { if (!alive.current) return; lines.forEach((l) => api.series.removePriceLine(l)); m.detach(); };
   }, [api, bars, overlay, tfSec, markTime]);
 
   return (

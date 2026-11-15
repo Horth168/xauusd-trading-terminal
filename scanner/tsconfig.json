@@ -1,5 +1,5 @@
 {
   "compilerOptions": { "target": "ES2022", "module": "ESNext", "moduleResolution": "bundler", "strict": true, "skipLibCheck": true, "noEmit": true, "lib": ["ES2022", "DOM"], "types": ["node"] },
-  "include": ["index.ts", "../src/ai/**/*.ts"],
-  "exclude": ["../src/ai/**/*.test.ts"]
+  "include": ["index.ts", "bridge.ts", "dry-run.ts", "../src/ai/**/*.ts"],
+  "exclude": ["../src/ai/**/*.test.ts", "../src/ai/client.ts", "../src/ai/ui/**"]
 }

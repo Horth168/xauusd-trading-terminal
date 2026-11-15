@@ -3,11 +3,12 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "Always-on XAUUSD analysis scanner: reads the local Exness MT5 bridge, stores signals in Firestore, sends Web Push. Analysis only — never trades.",
+  "description": "Always-on XAUUSD analysis scanner: reads the local Exness MT5 bridge, stores signals in Firestore, sends Web Push. Analysis only \u00e2\u20ac\u201d never trades.",
   "scripts": {
     "start": "tsx index.ts",
     "vapid": "web-push generate-vapid-keys --json",
-    "test-push": "tsx index.ts --test-push"
+    "test-push": "tsx index.ts --test-push",
+    "dry-run": "tsx dry-run.ts"
   },
   "dependencies": {
     "firebase-admin": "12.7.0",
