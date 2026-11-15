@@ -8,6 +8,9 @@ import { STRATEGIES } from '../backtest/strategies';
 import { DEFAULT_CONFIG, type BacktestConfig, type BacktestResult, type Stats, type Trade } from '../backtest/engine';
 import { runBacktestInWorker } from '../backtest/client';
 import { useScripts } from '../indicators/registry';
+import { useAiConfig } from '../ai/client';
+import { ValidationPanel } from '../backtest/ValidationPanel';
+import type { ValidationResult } from '../backtest/client';
 import { defaultParams } from '../indicators/builtins';
 import { feed, useFeed } from '../market/feed';
 import { TIMEFRAMES } from '../market/timeframes';
@@ -51,11 +54,17 @@ export default function BacktestPage() {
   const [running, setRunning] = useState(false);
   const [progress, setProgress] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<(BacktestResult & { source: string; barsCount: number; firstBar: number; lastBar: number }) | null>(null);
+  const [result, setResult] = useState<(BacktestResult & { source: string; barsCount: number; firstBar: number; lastBar: number; validation?: ValidationResult | null }) | null>(null);
+  const [validate, setValidate] = useState(false);
   const [compareOpen, setCompareOpen] = useState(false);
   const [sort, setSort] = useState<{ key: keyof Trade; dir: 1 | -1 }>({ key: 'id', dir: 1 });
 
   const strategyOptions = useMemo(() => [
+    // AI analyst strategies: exactly the deterministic rules used for live signals.
+    { id: 'ai:all', name: 'AI Analyst — all enabled AI strategies', inputs: [] as any[], code: undefined as string | undefined },
+    { id: 'ai:ema_stoch_cci', name: 'AI: EMA + Stochastic + CCI', inputs: [] as any[], code: undefined },
+    { id: 'ai:smc', name: 'AI: Smart Money Concepts', inputs: [] as any[], code: undefined },
+    { id: 'ai:mtf_trend', name: 'AI: Multi-Timeframe Trend', inputs: [] as any[], code: undefined },
     ...STRATEGIES.map((s) => ({ id: s.id, name: s.name, inputs: s.inputs, code: undefined as string | undefined })),
     { id: 'supertrend', name: 'Supertrend indicator signals', inputs: [{ id: 'length', label: 'ATR length', type: 'int' as const, default: 10 }, { id: 'mult', label: 'Factor', type: 'float' as const, default: 3 }], code: undefined },
     ...scripts.map((s) => ({ id: `custom:${s.id}`, name: `${s.name} (my ${s.kind})`, inputs: s.inputs, code: s.code })),
@@ -70,8 +79,12 @@ export default function BacktestPage() {
       setProgress('Loading historical candles…');
       const { bars, source: src } = await feed.range(tf, from, to, setProgress);
       if (bars.length < 50) throw new Error(`Only ${bars.length} candles available for this range — choose a longer range or another timeframe.`);
-      setProgress(`Simulating ${bars.length.toLocaleString()} candles…`);
-      const r = await runBacktestInWorker(bars, cfg, { type: strat.id, params }, strat.code);
+      const isAi = strat.id.startsWith('ai:');
+      if (isAi && tf !== 'M5' && tf !== 'M15') throw new Error('AI strategies run on M5 or M15 (their entry timeframes).');
+      const st = useAiConfig.getState();
+      if (isAi && !st.loaded) await st.load();
+      setProgress(isAi ? `AI analysis on ${bars.length.toLocaleString()} candles (about ${Math.ceil(bars.length / 4000)} s)…` : `Simulating ${bars.length.toLocaleString()} candles…`);
+      const r = await runBacktestInWorker(bars, cfg, { type: strat.id, params }, strat.code, { aiConfig: { ...useAiConfig.getState().cfg, entryTf: tf as 'M5' | 'M15' }, validate });
       setResult({ ...r, source: src, barsCount: bars.length, firstBar: bars[0].time, lastBar: bars[bars.length - 1].time });
     } catch (e: any) {
       setError(String(e.message ?? e));
@@ -138,7 +151,11 @@ export default function BacktestPage() {
           </Section>
 
           <Section title="Strategy">
-            <select className="input" value={stratType} onChange={(e) => { setStratType(e.target.value); const s = strategyOptions.find((x) => x.id === e.target.value); setParams(s ? defaultParams(s) : {}); }}>
+            <select className="input" value={stratType} onChange={(e) => {
+              setStratType(e.target.value); const s = strategyOptions.find((x) => x.id === e.target.value); setParams(s ? defaultParams(s) : {});
+              // AI strategies supply their own structural stop; TP1/TP2 = 2R/3R with half closed at each.
+              if (e.target.value.startsWith('ai:')) { c({ sl: { ...cfg.sl, mode: 'signal' }, tp: { ...cfg.tp, mode: 'rr', levels: [{ value: 2, closePct: 50 }, { value: 3, closePct: 50 }] }, exitOnSignal: false }); if (tf !== 'M15') setTf('M5'); }
+            }}>
               {strategyOptions.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
             <div className="mt-2 grid grid-cols-2 gap-2">
@@ -224,6 +241,11 @@ export default function BacktestPage() {
             </Field>
           </Section>
 
+          <label className="flex items-start gap-2 rounded-xl bg-white/[0.03] p-3 text-xs text-ink-300">
+            <input type="checkbox" className="mt-0.5 accent-gold-500" checked={validate} onChange={(e) => setValidate(e.target.checked)} />
+            <span><b className="text-ink-100">Robustness checks</b> — out-of-sample split, walk-forward windows, Monte Carlo resampling, look-ahead check and overfitting warnings.</span>
+          </label>
+          {strat.id.startsWith('ai:') && <p className="text-[11px] text-ink-400">AI strategies use your AI settings (Settings → AI analyst) and the same rules as live signals. Stop = strategy's structural stop; TP1/TP2 = 2R/3R.</p>}
           <button className="btn-gold w-full py-2" onClick={run} disabled={running || !source}>
             {running ? <><Loader2 size={15} className="animate-spin" /> {progress || 'Running…'}</> : <><Play size={15} /> Run backtest</>}
           </button>
@@ -261,6 +283,7 @@ export default function BacktestPage() {
                 <div key={w} className="flex items-center gap-2 rounded-lg border border-gold-600/30 bg-gold-500/5 px-3 py-2 text-xs text-gold-300"><AlertTriangle size={14} />{w}</div>
               ))}
               <StatsGrid st={st} initial={cfg.initialBalance} />
+              {result.validation && <ValidationPanel v={result.validation} initial={cfg.initialBalance} tz={tz} />}
               <div className="card p-3">
                 <h3 className="mb-2 text-sm font-semibold text-ink-100">Equity & balance</h3>
                 <EquityChart data={downsample(result.curve).map((p) => ({ label: fmtDate(p.time, tz), equity: p.equity, balance: p.balance }))} />
