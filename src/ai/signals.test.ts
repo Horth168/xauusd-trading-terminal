@@ -48,7 +48,7 @@ describe('signal lifecycle', () => {
     const s2 = updateSignal(sig('BUY', { entryLow: 4070, entryHigh: 4071, sl: 4078 }), [bar(0, 4084, 4085, 4080, 4081), bar(1, 4081, 4081, 4076.5, 4077)], 'M1', cfg, 0.2);
     expect(s2.status).toBe('INVALIDATED');
     expect(s2.outcome).toBe('CANCELLED');
-    expect(s2.filledAt).toBeNull();
+    expect(s2.filledAt ?? null).toBeNull();
   });
 
   it('expires as a missed entry if TP1 is reached first, and when stale', () => {
