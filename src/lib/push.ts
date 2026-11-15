@@ -65,6 +65,7 @@ export async function testPushDirect(delaySec = 0): Promise<string> {
   const token = await idToken();
   const r = await fetch('/api/push-test', { method: 'POST', headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` }, body: JSON.stringify({ subscription: sub.toJSON(), delaySec }) });
   const j = await r.json().catch(() => ({}));
+  if (j.error === 'not_configured') throw new Error('Direct tests are disabled because the private push key is kept only on your scanner PC (more secure). Start the scanner and tap "Test via scanner".');
   if (!r.ok || !j.ok) throw new Error(j.message || j.error || `HTTP ${r.status}`);
   return 'Test notification sent.';
 }

@@ -19,6 +19,26 @@ Exness has no public market-data API; the official route is the MT5 terminal. Se
 In *Auto* mode the app uses the bridge when reachable, falls back to Twelve Data after 3 failed reconnects, and keeps
 probing the bridge every 30 s. Charts reload when the source changes, so prices from different sources are never mixed.
 
+## AI Gold Analyst (new)
+
+An analysis-only AI analyst for XAUUSD — it never places, modifies or closes trades; you execute in Exness MT5 Mobile.
+
+* **Six agents** (market structure, technical indicators, Smart Money Concepts, multi-timeframe, risk, final
+  reviewer) running on deterministic calculations from closed candles — the LLM (optional) only explains them.
+* **Strategies:** EMA 12/26 + Stochastic 5,3,3 + CCI 14; Smart Money Concepts; H4/H1/M15/M5 trend; your own XTS scripts.
+* **Signals** with entry zone, structural/ATR stop, TP1/TP2, RR, 100-point evidence checklist, reasons for/against,
+  invalidation, statuses (WATCHING → SETUP FORMING → CONFIRMED / WAIT / INVALIDATED / EXPIRED) and duplicate prevention.
+* **Background scanner** (`scanner/`) next to MT5 + **Web Push** to iPhone/Android while the app is closed.
+* **Performance tracker** of AI signals on real subsequent candles (TP1/TP2/SL/AMBIGUOUS, MFE/MAE, R stats) — separate
+  from your journal P&L.
+* **Strategy Tester integration** with out-of-sample, walk-forward, Monte Carlo, look-ahead and overfitting checks.
+* Setup: [docs/AI-SCANNER.md](docs/AI-SCANNER.md) · design & audit: [docs/AI-UPGRADE-PLAN.md](docs/AI-UPGRADE-PLAN.md).
+
+The agent-committee structure, "LLM explains deterministic engine output" approach, number audit of AI text and the
+validation suite follow ideas from [HKUDS/Vibe-Trading](https://github.com/HKUDS/Vibe-Trading) (MIT License,
+© 2026 Vibe-Trading Contributors). No Vibe-Trading source code is included; the concepts were re-implemented in
+TypeScript for this single-symbol app.
+
 ## Features
 
 * **Chart** — candles / Heikin Ashi / bars / line / area; M1 M2 M3 M5 M10 M15 M30 H1 H2 H4 H6 H8 H12 D1 W1 MN1 plus
@@ -90,5 +110,6 @@ firestore.rules, storage.rules, firestore.indexes.json
 * Exact Exness prices require the MT5 bridge running on a PC with MT5 logged in (Exness offers no hosted API).
 * Twelve Data free plan: 800 requests/day, 8/min — the fallback is polled, not streamed, and labelled DELAYED.
 * Backtests are candle-based; no tick data, no variable spread, no swaps.
-* Alerts run only while the app is open (no always-on server / push service).
+* Price alerts (Alerts page) run while the app is open; AI signal notifications are delivered by the background scanner.
+* The scanner must run on the machine that runs MT5 (PC or Windows VPS) — Exness has no cloud market-data API.
 * Scripts are JavaScript with a Pine-like API; Pine Script source is not compatible.
