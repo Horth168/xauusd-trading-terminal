@@ -13,7 +13,9 @@ import { auth, db, firebaseEnabled, storage } from './firebase';
  * ("local mode"), which the UI labels clearly.
  */
 export type CollectionName =
-  | 'trades' | 'cashflows' | 'strategies' | 'backtests' | 'indicators' | 'alerts' | 'drawings' | 'settings';
+  | 'trades' | 'cashflows' | 'strategies' | 'backtests' | 'indicators' | 'alerts' | 'drawings' | 'settings'
+  // AI analyst (written by the background scanner and the app)
+  | 'ai_signals' | 'ai_reports' | 'ai_status' | 'push_subscriptions' | 'push_requests' | 'notification_log';
 
 export interface BaseDoc {
   id: string;
@@ -29,6 +31,12 @@ export const useAuth = create<AuthState>(() => ({ user: null, ready: !firebaseEn
 if (auth) onAuthStateChanged(auth, (user) => useAuth.setState({ user, ready: true }));
 
 export const cloudActive = () => Boolean(firebaseEnabled && db && useAuth.getState().user);
+
+/** Firebase ID token for calling protected /api endpoints. */
+export async function idToken(): Promise<string | null> {
+  const u = useAuth.getState().user;
+  return u ? u.getIdToken() : null;
+}
 const uid = () => useAuth.getState().user!.uid;
 
 export const newId = () => (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`).replace(/-/g, '').slice(0, 20);

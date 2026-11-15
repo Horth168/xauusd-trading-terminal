@@ -8,6 +8,7 @@ web app over HTTP + WebSocket. It never places, modifies or closes orders.
 Endpoints (all require `Authorization: Bearer <BRIDGE_TOKEN>`, WebSocket uses ?token=):
   GET  /health                         bridge + terminal status
   GET  /symbol                         symbol specification (digits, contract size, spread...)
+  GET  /tick                           latest bid/ask, spread, broker time
   GET  /history?timeframe=M15&count=1500[&end=unix]   or  &start=unix&end=unix
   GET  /deals?start=unix&end=unix      closed positions + balance operations (for journal import)
   WS   /stream?token=...               ticks (bid/ask) + live bars for subscribed timeframes
@@ -135,6 +136,22 @@ def health():
         acc = mt5.account_info() if connected else None
     return {"ok": True, "symbol": SYMBOL, "terminal_connected": connected,
             "server": acc.server if acc else None, "read_only": True}
+
+
+@app.get("/tick")
+def tick():
+    """Latest bid/ask, spread and broker time (read-only)."""
+    if not ensure_terminal():
+        raise HTTPException(503, "MT5 terminal not connected")
+    with lock:
+        t = mt5.symbol_info_tick(SYMBOL)
+        s = mt5.symbol_info(SYMBOL)
+        acc = mt5.account_info()
+    if t is None or s is None:
+        raise HTTPException(404, f"No tick for {SYMBOL}")
+    return {"symbol": SYMBOL, "bid": t.bid, "ask": t.ask, "spread": round(t.ask - t.bid, 6), "spread_points": s.spread,
+            "digits": s.digits, "time_msc": int(t.time_msc) - SERVER_OFFSET * 1000, "broker_time": int(t.time),
+            "server": acc.server if acc else None}
 
 
 @app.get("/symbol")

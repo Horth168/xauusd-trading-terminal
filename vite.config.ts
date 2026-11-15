@@ -7,7 +7,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'apple-touch-icon-180x180.png', 'icon.svg'],
+      includeAssets: ['favicon.ico', 'apple-touch-icon-180x180.png', 'icon.svg', 'push-sw.js'],
       manifest: {
         name: 'XAUUSD Trading Terminal',
         short_name: 'XAU Terminal',
@@ -32,6 +32,8 @@ export default defineConfig({
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         // Market data is never served from the SW cache: live/delayed status must be truthful.
         runtimeCaching: [],
+        // Web Push: notifications from the background scanner work while the app is closed.
+        importScripts: ['push-sw.js'],
       },
     }),
   ],

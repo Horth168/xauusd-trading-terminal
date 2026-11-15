@@ -9,3 +9,7 @@ __pycache__
 mt5-bridge/.env
 .venv
 *.tsbuildinfo
+scanner/node_modules
+scanner/.env
+scanner/service-account.json
+scanner/*.json.key
