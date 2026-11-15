@@ -205,6 +205,7 @@ export interface SignalRecord {
   /** recent entry-TF candles stored with the signal so its chart is reproducible */
   candles: Bar[];
   filledAt?: number | null;
+  fillPrice?: number | null;
   closedAt?: number | null;
   exitPrice?: number | null;
   mfe?: number; // price units
