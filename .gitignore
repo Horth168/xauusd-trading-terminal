@@ -13,3 +13,5 @@ scanner/node_modules
 scanner/.env
 scanner/service-account.json
 scanner/*.json.key
+.env.*
+!.env.example
