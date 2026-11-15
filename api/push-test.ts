@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import webpush from 'web-push';
-import { rateLimited, requireUser } from './_auth';
+import { rateLimited, requireUser } from './_auth.js';
 
 /**
  * Sends one test notification to the caller's own push subscription. Lets you confirm iPhone/Android delivery

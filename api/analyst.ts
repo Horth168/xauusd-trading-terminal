@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { rateLimited, requireUser } from './_auth';
-import { auditNumbers } from '../src/ai/audit';
+import { rateLimited, requireUser } from './_auth.js';
+import { auditNumbers } from './_audit.js';
 
 /**
  * AI Analyst Q&A. The LLM only explains a stored, deterministic analysis report — it receives no tools, cannot
