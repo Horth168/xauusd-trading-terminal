@@ -19,6 +19,9 @@ import { DrawingLayer } from './drawings/DrawingLayer';
 import { useDrawings } from './drawings/model';
 import { useChartMarks } from '../store/chartMarks';
 import { useAlerts, createPriceAlert } from '../alerts/engine';
+import { useAiOverlay } from '../ai/ui/overlayStore';
+import { addOverlayLines, overlayMarkers } from '../ai/ui/overlayMarks';
+import { AiZones } from '../ai/ui/AiZones';
 
 interface Props {
   index: number;
@@ -53,6 +56,7 @@ export function ChartPane({ index, active, onActivate, onEditIndicator, register
   const scripts = useScripts((s) => s.scripts);
   const alerts = useAlerts((s) => s.alerts);
   const marks = useChartMarks();
+  const aiOv = useAiOverlay();
 
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
@@ -269,11 +273,21 @@ export function ChartPane({ index, active, onActivate, onEditIndicator, register
       if (times.has(et)) out.push({ time: t(et), position: long ? 'belowBar' : 'aboveBar', shape: long ? 'arrowUp' : 'arrowDown', color: long ? COLORS.up : COLORS.down, text: `#${tr.id} ${long ? 'L' : 'S'}` });
       if (times.has(xt)) out.push({ time: t(xt), position: long ? 'aboveBar' : 'belowBar', shape: 'circle', color: tr.pnl >= 0 ? COLORS.up : COLORS.down, text: `${tr.pnl >= 0 ? '+' : ''}${tr.pnl.toFixed(0)}` });
     }
+    const ai = useAiOverlay.getState();
+    if (ai.visible && ai.overlay) out.push(...overlayMarkers(ai.overlay, bars, tf.seconds));
     out.sort((a, b) => (a.time as number) - (b.time as number));
     m.setMarkers(out);
   }, [displayBars, tf]);
 
-  useEffect(() => { updateMarkers(); }, [marks.trades, updateMarkers]);
+  useEffect(() => { updateMarkers(); }, [marks.trades, updateMarkers, aiOv.visible, aiOv.overlay]);
+
+  // AI overlay price lines (levels, liquidity, entry / SL / TP1 / TP2)
+  useEffect(() => {
+    const s = mainRef.current;
+    if (!s || !aiOv.visible || !aiOv.overlay) return;
+    const lines = addOverlayLines(s, aiOv.overlay);
+    return () => lines.forEach((l) => s.removePriceLine(l));
+  }, [aiOv.visible, aiOv.overlay, chartReady]);
 
   // Focused backtest trade: SL/TP/entry price lines + scroll to it
   useEffect(() => {
@@ -453,6 +467,9 @@ export function ChartPane({ index, active, onActivate, onEditIndicator, register
           onAlert={(price) => createPriceAlert(price, barsRef.current[barsRef.current.length - 1]?.close)}
         />
       )}
+      {chartReady && aiOv.visible && aiOv.overlay && (
+        <AiZones chart={chartReady.chart} series={chartReady.series} getBars={displayBars} tfSeconds={tf.seconds} overlay={aiOv.overlay} />
+      )}
 
       {/* Legend */}
       <div className="pointer-events-none absolute left-2 top-1.5 z-20 max-w-[calc(100%-80px)] select-none text-[11px] leading-5">
@@ -490,6 +507,12 @@ export function ChartPane({ index, active, onActivate, onEditIndicator, register
             </div>
           );
         })}
+        {aiOv.visible && aiOv.report && (
+          <div className="pointer-events-auto flex items-center gap-1.5 text-ink-300">
+            <span className="text-gold-300">AI: {aiOv.report.decision}{aiOv.report.strategyName ? ` · ${aiOv.report.strategyName}` : ''} · score {aiOv.report.score.total}</span>
+            <button className="hover:text-down" title="Hide AI overlay" onClick={() => useAiOverlay.getState().setVisible(false)}><X size={12} /></button>
+          </div>
+        )}
         {marks.trades.length > 0 && (
           <div className="pointer-events-auto flex items-center gap-1.5 text-ink-300">
             <span className="text-gold-300">Backtest: {marks.label} ({marks.trades.length} trades)</span>

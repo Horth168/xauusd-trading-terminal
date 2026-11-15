@@ -10,6 +10,7 @@ import { tdConfigured } from '../market/providers/twelvedata';
 import { TIMEZONES } from '../lib/time';
 import { auth, firebaseConfig, firebaseEnabled } from '../lib/firebase';
 import { cloudActive, localCounts, migrateLocalToCloud, useAuth } from '../lib/db';
+import { AiSettingsPanel } from '../ai/ui/AiSettingsPanel';
 
 export default function SettingsPage() {
   const s = useSettings();
@@ -72,6 +73,8 @@ export default function SettingsPage() {
         </div>
         <button className="btn" onClick={() => feed.restart()}>Reconnect now</button>
       </section>
+
+      <AiSettingsPanel />
 
       <section className="card grid gap-3 p-4 sm:grid-cols-2">
         <h2 className="font-semibold text-ink-100 sm:col-span-2">Chart & trading</h2>

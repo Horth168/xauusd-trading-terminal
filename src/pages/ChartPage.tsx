@@ -7,6 +7,9 @@ import { DrawingProps, DrawingToolbar, HiddenDrawingsNotice } from '../chart/Dra
 import { AddIndicatorDialog, EditIndicatorDialog } from '../chart/IndicatorDialogs';
 import { PositionDialog } from '../chart/PositionDialog';
 import { MobileChartBar } from '../chart/MobileChartBar';
+import { useAiOverlay } from '../ai/ui/overlayStore';
+import { runLocalAnalysis, useAiConfig } from '../ai/client';
+import { Sparkles } from 'lucide-react';
 import { FeedBadge, PriceTicker, StatusBar } from '../components/FeedStatus';
 import { Modal } from '../components/ui';
 import { TIMEFRAMES, customTimeframe } from '../market/timeframes';
@@ -54,6 +57,18 @@ export default function ChartPage() {
   const areaRef = useRef<HTMLDivElement>(null);
   const apis = useRef<(PaneApi | null)[]>([]);
   const loadDrawings = useDrawings((d) => d.load);
+  const aiVisible = useAiOverlay((x) => x.visible);
+  const [aiBusy, setAiBusy] = useState(false);
+  const toggleAi = async () => {
+    const ov = useAiOverlay.getState();
+    if (ov.visible) { ov.setVisible(false); return; }
+    setAiBusy(true);
+    try {
+      const st = useAiConfig.getState();
+      if (!st.loaded) await st.load();
+      ov.show(await runLocalAnalysis(useAiConfig.getState().cfg));
+    } catch (e: any) { alert(e.message ?? String(e)); } finally { setAiBusy(false); }
+  };
 
   useEffect(() => { loadDrawings(); }, [loadDrawings]);
   useEffect(() => {
@@ -135,6 +150,7 @@ export default function ChartPage() {
           )}
         </div>
         <button className="btn shrink-0 border-transparent bg-transparent px-2 text-xs" onClick={() => setIndOpen(true)}><FlaskConical size={14} /> Indicators</button>
+        <button className={`btn shrink-0 px-2 text-xs ${aiVisible ? 'border-gold-500/40 bg-gold-500/15 text-gold-300' : 'border-transparent bg-transparent'}`} onClick={toggleAi} title="AI analysis overlay"><Sparkles size={14} className={aiBusy ? 'animate-pulse' : ''} /> AI</button>
         <button className="btn-icon shrink-0" title="Bar replay" onClick={() => apis.current[activeChart]?.startReplay()}><Rewind size={16} /></button>
         <div className="mx-1 h-5 w-px bg-ink-700" />
         {LAYOUTS.map((l) => (
@@ -174,6 +190,8 @@ export default function ChartPage() {
           onReplay={() => apis.current[activeChart]?.startReplay()}
           onScreenshot={screenshot}
           onLayouts={() => setLayoutsOpen(true)}
+          onAi={toggleAi}
+          aiActive={aiVisible}
         />
       ) : <StatusBar />}
 

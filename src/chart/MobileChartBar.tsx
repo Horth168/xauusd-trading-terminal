@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import {
-  Camera, Eye, EyeOff, FlaskConical, Lock, LockOpen, Magnet, MoreHorizontal, PencilRuler, Pin, Redo2, Rewind, Save, SlidersHorizontal, Trash2, Undo2, X,
+  Camera, Eye, EyeOff, FlaskConical, Sparkles, Lock, LockOpen, Magnet, MoreHorizontal, PencilRuler, Pin, Redo2, Rewind, Save, SlidersHorizontal, Trash2, Undo2, X,
 } from 'lucide-react';
 import { Modal } from '../components/ui';
 import { TOOLS, TOOL_MAP, useDrawings, type ToolSpec } from './drawings/model';
@@ -15,6 +15,8 @@ interface Props {
   onReplay: () => void;
   onScreenshot: () => void;
   onLayouts: () => void;
+  onAi: () => void;
+  aiActive: boolean;
 }
 
 const GROUPS: ToolSpec['group'][] = ['Lines', 'Fibonacci', 'Shapes', 'Trading'];
@@ -68,7 +70,7 @@ export function MobileChartBar(p: Props) {
           <BarButton icon={PencilRuler} label="Draw" onClick={() => setSheet('draw')} />
           <BarButton icon={FlaskConical} label="Indicators" onClick={p.onIndicators} />
           <BarButton icon={TypeIcon} label="Chart type" onClick={() => setSheet('type')} />
-          <BarButton icon={Rewind} label="Replay" onClick={p.onReplay} />
+          <BarButton icon={Sparkles} label="AI" onClick={p.onAi} active={p.aiActive} />
           <BarButton icon={MoreHorizontal} label="Tools" onClick={() => setSheet('more')} />
         </div>
       )}
@@ -120,6 +122,7 @@ export function MobileChartBar(p: Props) {
           <Tile icon={Redo2} label="Redo" onClick={redo} tone={future.length ? '' : 'opacity-30'} />
           <Tile icon={Camera} label="Screenshot" onClick={() => { close(); p.onScreenshot(); }} />
           <Tile icon={Save} label="Layouts" onClick={() => { close(); p.onLayouts(); }} />
+          <Tile icon={Rewind} label="Replay" onClick={() => { close(); p.onReplay(); }} />
         </div>
         <button onClick={() => { if (items.length && confirm(`Delete all ${items.length} drawings? You can undo this.`)) { commit([]); close(); } }}
           className="mt-3 flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-down/10 text-sm font-semibold text-down active:scale-[0.98]">

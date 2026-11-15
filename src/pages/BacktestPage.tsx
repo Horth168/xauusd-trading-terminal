@@ -86,7 +86,7 @@ export default function BacktestPage() {
     useChartMarks.getState().set({ label: strat.name, tf, trades: marks, focus: focus ? marks.find((m) => m.id === focus.id) ?? null : null });
     const s = useSettings.getState();
     s.updateChart(s.activeChart, { tf });
-    nav('/');
+    nav('/chart');
   };
 
   const save = async () => {

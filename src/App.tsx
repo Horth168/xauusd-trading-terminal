@@ -2,8 +2,8 @@ import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { NavLink, Route, Routes, useLocation } from 'react-router-dom';
 import { signOut } from 'firebase/auth';
 import {
-  BellRing, BookOpenText, CalendarDays, CandlestickChart, ChevronsLeft, ChevronsRight, Code2, FlaskConical, Landmark, Library, Loader2,
-  LogOut, Menu, Settings, WifiOff, X, type LucideIcon,
+  Bell, BellRing, BookOpenText, Bot, CalendarDays, CandlestickChart, ChevronsLeft, ChevronsRight, Code2, FlaskConical, Gauge, Landmark, Library, Loader2,
+  LogOut, Menu, Radar, Settings, WifiOff, X, type LucideIcon,
 } from 'lucide-react';
 import { feed } from './market/feed';
 import { startScriptRegistry } from './indicators/registry';
@@ -24,17 +24,28 @@ const StrategiesPage = lazy(() => import('./pages/StrategiesPage'));
 const IndicatorsPage = lazy(() => import('./pages/IndicatorsPage'));
 const AlertsPage = lazy(() => import('./pages/AlertsPage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
+const DashboardPage = lazy(() => import('./pages/DashboardPage'));
+const AiAnalystPage = lazy(() => import('./pages/AiAnalystPage'));
+const SignalsPage = lazy(() => import('./pages/SignalsPage'));
+const SignalDetailPage = lazy(() => import('./pages/SignalDetailPage'));
+const NotificationsPage = lazy(() => import('./pages/NotificationsPage'));
 
 interface NavItem { to: string; label: string; short?: string; icon: LucideIcon; mobile?: boolean }
 const SECTIONS: { title: string; items: NavItem[] }[] = [
+  { title: 'Analyst', items: [
+    { to: '/', label: 'Dashboard', short: 'Home', icon: Gauge, mobile: true },
+    { to: '/chart', label: 'Chart', icon: CandlestickChart, mobile: true },
+    { to: '/ai', label: 'AI Analyst', short: 'AI', icon: Bot, mobile: true },
+    { to: '/signals', label: 'Signals', icon: Radar, mobile: true },
+    { to: '/notifications', label: 'Notifications', short: 'Alerts', icon: Bell },
+  ] },
   { title: 'Trade', items: [
-    { to: '/', label: 'Chart', icon: CandlestickChart, mobile: true },
-    { to: '/backtest', label: 'Strategy Tester', short: 'Backtest', icon: FlaskConical, mobile: true },
-    { to: '/alerts', label: 'Alerts', icon: BellRing },
+    { to: '/backtest', label: 'Strategy Tester', short: 'Backtest', icon: FlaskConical },
+    { to: '/alerts', label: 'Price Alerts', short: 'Price alerts', icon: BellRing },
   ] },
   { title: 'Journal', items: [
-    { to: '/journey', label: 'My Trading Journey', short: 'Journey', icon: BookOpenText, mobile: true },
-    { to: '/calendar', label: 'Calendar', icon: CalendarDays, mobile: true },
+    { to: '/journey', label: 'My Trading Journey', short: 'Journey', icon: BookOpenText },
+    { to: '/calendar', label: 'Calendar', icon: CalendarDays },
     { to: '/cashflow', label: 'Deposits & Withdrawals', short: 'Funds', icon: Landmark },
   ] },
   { title: 'Build', items: [
@@ -44,7 +55,7 @@ const SECTIONS: { title: string; items: NavItem[] }[] = [
   ] },
 ];
 const NAV = SECTIONS.flatMap((s) => s.items);
-const MOBILE_TABS = ['/', '/journey', '/calendar', '/backtest'].map((p) => NAV.find((n) => n.to === p)!);
+const MOBILE_TABS = ['/', '/chart', '/ai', '/signals'].map((p) => NAV.find((n) => n.to === p)!);
 
 function useOnline() {
   const [on, setOn] = useState(navigator.onLine);
@@ -130,7 +141,7 @@ export default function App() {
   if (!ready) return <div className="flex h-full items-center justify-center"><img src="/icon.svg" alt="" className="h-12 w-12 animate-pulse" /></div>;
   if (needLogin) return <LoginPage />;
 
-  const isChart = loc.pathname === '/';
+  const isChart = loc.pathname === '/chart';
   const current = NAV.find((n) => (n.to === '/' ? loc.pathname === '/' : loc.pathname.startsWith(n.to)));
   const moreActive = !MOBILE_TABS.some((t) => t.to === current?.to);
 
@@ -203,7 +214,12 @@ export default function App() {
           <Suspense fallback={<div className="flex h-full items-center justify-center"><Loader2 className="animate-spin text-gold-400" /></div>}>
             <div key={loc.pathname} className={isChart ? 'h-full' : 'animate-in px-4 pb-8 pt-4 md:px-8 md:pb-10 md:pt-7'}>
               <Routes>
-                <Route path="/" element={<ChartPage />} />
+                <Route path="/" element={<DashboardPage />} />
+                <Route path="/chart" element={<ChartPage />} />
+                <Route path="/ai" element={<AiAnalystPage />} />
+                <Route path="/signals" element={<SignalsPage />} />
+                <Route path="/signals/:id" element={<SignalDetailPage />} />
+                <Route path="/notifications" element={<NotificationsPage />} />
                 <Route path="/journey" element={<JourneyPage />} />
                 <Route path="/calendar" element={<CalendarPage />} />
                 <Route path="/backtest" element={<BacktestPage />} />
